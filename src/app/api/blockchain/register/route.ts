@@ -17,7 +17,6 @@ export async function POST(req: NextRequest) {
           blockchain_tx_hash: result.txHash,
           blockchain_block_number: result.blockNumber,
           blockchain_registered_at: new Date().toISOString(),
-          identity_hash: result.identityHash,
           contract_address: process.env.CONTRACT_ADDRESS,
         })
         .eq('id', profileId);

@@ -70,8 +70,8 @@ body{font-family:'Nunito',sans-serif;background:#0f1a12;color:#e8f5e9}
 @media(max-width:480px){.g2,.g3{grid-template-columns:1fr}.gfull{grid-column:1}}
 `;
 
-// ── OUTSIDE the main component — critical to prevent focus loss ──
-type FP = { label:string; value:string; onChange:(v:string)=>void; req?:boolean; ph?:string; type?:string; opts?:string[]; max?:number; };
+// ── Field component OUTSIDE main component to prevent focus loss ──
+type FP = { label:string; value:string; onChange:(v:string)=>void; req?:boolean; ph?:string; type?:string; opts?:string[]; max?:number };
 function Field({ label, value, onChange, req, ph, type='text', opts, max }: FP) {
   return (
     <div style={{display:'flex',flexDirection:'column'}}>
@@ -117,27 +117,63 @@ export default function RegisterPage() {
   async function submitAll() {
     setLoading(true);
     try {
+      // 1. Create auth account
       const { data: authData, error: authErr } = await sb.auth.signUp({
         email: form.email, password: form.password,
         options: { data: { full_name: form.name, role: 'farmer' } }
       });
       if (authErr) throw authErr;
+
+      // 2. Sign in
       await new Promise(r=>setTimeout(r,1200));
       const { data: signIn, error: signInErr } = await sb.auth.signInWithPassword({ email: form.email, password: form.password });
       if (signInErr) throw signInErr;
+
+      // 3. Create farmer profile
       const { error: profileErr } = await sb.from('farmer_profiles').insert({
-        user_id: signIn.user.id, full_name: form.name, mobile_number: form.mobile,
+        user_id: signIn.user.id,
+        full_name: form.name,
+        mobile_number: form.mobile,
         aadhaar_number: form.aadhaar,
         address: [form.address,form.village,form.district,form.state,form.pincode].filter(Boolean).join(', '),
-        land_area: parseFloat(form.landArea)||0, land_unit:'acres', crop_type: form.cropType,
-        bank_name: form.bankName, account_number: form.accountNumber,
-        ifsc_code: form.ifsc, account_holder_name: form.accountHolder||form.name,
+        land_area: parseFloat(form.landArea)||0,
+        land_unit: 'acres',
+        crop_type: form.cropType,
+        bank_name: form.bankName,
+        account_number: form.accountNumber,
+        ifsc_code: form.ifsc,
+        account_holder_name: form.accountHolder||form.name,
       });
       if (profileErr) throw profileErr;
-      toast.success('Registration complete!');
-      router.push('/dashboard/farmer'); router.refresh();
-    } catch(err:any) { toast.error(err?.message??'Registration failed'); }
-    finally { setLoading(false); }
+
+      // 4. Register on blockchain (non-blocking)
+      const farmerId = 'QG-' + signIn.user.id.slice(0,8).toUpperCase();
+      const { data: newProfile } = await sb
+        .from('farmer_profiles')
+        .select('id')
+        .eq('user_id', signIn.user.id)
+        .single();
+
+      if (newProfile) {
+        fetch('/api/blockchain/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            farmerId,
+            name: form.name,
+            mobile: form.mobile,
+            aadhaarLast4: form.aadhaar.slice(-4),
+            profileId: (newProfile as any).id,
+          }),
+        }).catch(e => console.log('Blockchain registration failed:', e));
+      }
+
+      toast.success('Registration complete! Blockchain identity being created...');
+      router.push('/dashboard/farmer');
+      router.refresh();
+    } catch(err:any) {
+      toast.error(err?.message??'Registration failed');
+    } finally { setLoading(false); }
   }
 
   const steps = [
@@ -184,7 +220,6 @@ export default function RegisterPage() {
       {/* RIGHT */}
       <div className="reg-right">
         <div className="reg-form">
-
           <div className="reg-stepper">
             {steps.map((s,i)=>(
               <div key={s.n} style={{display:'flex',alignItems:'center',flex:i<steps.length-1?1:0}}>
@@ -231,7 +266,9 @@ export default function RegisterPage() {
               <Field label="IFSC Code" value={form.ifsc} onChange={set('ifsc')} ph="e.g. SBIN0001234"/>
               <Field label="Monthly Income (₹)" value={form.monthlyIncome} onChange={set('monthlyIncome')} type="number" ph="e.g. 15000"/>
             </div>
-            <div className="info-box">✅ Your identity will be registered on Ethereum Sepolia blockchain. Bank details are used only for Direct Benefit Transfer (DBT).</div>
+            <div className="info-box">
+              ✅ Your identity will be registered on <strong>Ethereum Sepolia blockchain</strong>. Contract: 0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379. Bank details used only for Direct Benefit Transfer (DBT).
+            </div>
           </>}
 
           <div className="reg-btns">
@@ -241,7 +278,6 @@ export default function RegisterPage() {
             </button>
           </div>
           <div className="reg-signin">Already registered? <a href="/auth/login">Sign in →</a></div>
-
         </div>
       </div>
     </div>

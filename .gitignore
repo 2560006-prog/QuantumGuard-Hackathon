@@ -42,4 +42,5 @@ Thumbs.db
 
 # blockchain
 /blockchain/node_modules
-/blockchain/.artifacts
+/blockchain/artifacts
+/blockchain/cache

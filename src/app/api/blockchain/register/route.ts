@@ -12,13 +12,13 @@ export async function POST(req: NextRequest) {
       const supabase = await createClient();
       await supabase
         .from('farmer_profiles')
-        .update({
-          blockchain_tx_hash: result.txHash,
-          blockchain_block_number: result.blockNumber,
-          blockchain_registered_at: new Date().toISOString(),
-          identity_hash: farmerId,
-          contract_address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
-        })
+       .update({
+  blockchain_tx_hash: result.txHash,
+  blockchain_block_number: result.blockNumber,
+  blockchain_registered_at: new Date().toISOString(),
+  identity_hash: result.identityHash,
+  contract_address: process.env.CONTRACT_ADDRESS,
+} as any)
         .eq('id', profileId);
 
       return NextResponse.json({ success: true, txHash: result.txHash });

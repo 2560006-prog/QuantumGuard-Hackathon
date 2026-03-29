@@ -1667,7 +1667,7 @@ export default function FarmerDashboard() {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [uploading, setUploading] = useState(false);
-  const [docType, setDocType] = useState('identity');
+  const [docType, setDocType] = useState('aadhaar');
   const jsLoaded = useRef(false);
 
   useEffect(() => { loadData(); }, []);
@@ -1804,18 +1804,19 @@ export default function FarmerDashboard() {
         const el = document.getElementById('qr-canvas-real');
         if (el && (window as any).QRCode && farmerId) {
           el.innerHTML = '';
-          try { new (window as any).QRCode(el, { text: `${farmerId}|${user?.full_name}|${verStatus}|LAND:${p?.land_area}ac|CROP:${p?.crop_type}`, width: 180, height: 180, colorDark: '#1b5e20', colorLight: '#ffffff' }); } catch(e) {}
+          try { const qrUrl = `${window.location.origin}/farmer/${farmerId}`; new (window as any).QRCode(el, { text: qrUrl, width: 180, height: 180, colorDark: '#1b5e20', colorLight: '#ffffff' }); } catch(e) {}
         }
       }, 300);
     }
   }
 
   const DOC_TYPES = [
-    { key: 'identity', label: 'Aadhaar / Identity Card', icon: '🪪' },
-    { key: 'land',     label: 'Land Document (7/12)',     icon: '🗺️' },
-    { key: 'bank',     label: 'Bank Passbook',            icon: '🏦' },
-    { key: 'crop',     label: 'Crop / Farm Photo',        icon: '🌾' },
-    { key: 'other',    label: 'Income Certificate',       icon: '📃' },
+    { key: 'aadhaar', label: 'Aadhaar Card', icon: '🪪' },
+    { key: 'land', label: 'Land Document (7/12)', icon: '🗺️' },
+    { key: 'bank', label: 'Bank Passbook', icon: '🏦' },
+    { key: 'photo', label: 'Farmer Photo', icon: '🧑‍🌾' },
+    { key: 'income', label: 'Income Certificate', icon: '📃' },
+    { key: 'landphoto', label: 'Land Photo', icon: '🌾' },
   ];
 
   const uploadedDocTypes = docs.map((d: any) => d.document_type);
@@ -2290,7 +2291,7 @@ export default function FarmerDashboard() {
                     </div>
                     <div className="qr-actions" style={{ justifyContent: 'flex-start' }}>
                       <button className="qr-action-btn download" onClick={() => { const c = document.querySelector('#qr-canvas-real canvas') as HTMLCanvasElement; if(c){ const a=document.createElement('a');a.download=`QR_${farmerId}.png`;a.href=c.toDataURL();a.click(); } else toast('No QR to download'); }}>⬇ Download QR</button>
-                      <button className="qr-action-btn share" onClick={() => { navigator.clipboard.writeText(`FarmVerify ID: ${farmerId} | ${user?.full_name}`); toast.success('Identity link copied!'); }}>↗ Share QR</button>
+                      <button className="qr-action-btn share" onClick={() => { const qrUrl = `${window.location.origin}/farmer/${farmerId}`; navigator.clipboard.writeText(qrUrl); toast.success('Profile link copied! Share with bank.'); }}>↗ Share Link</button>
                       <button className="qr-action-btn print" onClick={() => window.print()}>🖨 Print Card</button>
                     </div>
                   </div>

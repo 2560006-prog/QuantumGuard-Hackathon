@@ -44,3 +44,5 @@ Thumbs.db
 /blockchain/node_modules
 /blockchain/artifacts
 /blockchain/cache
+.vercel
+.env*.local

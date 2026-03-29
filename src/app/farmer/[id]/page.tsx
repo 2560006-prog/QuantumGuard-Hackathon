@@ -4,13 +4,14 @@ import { notFound } from 'next/navigation';
 export default async function PublicFarmerPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
 
-  const farmerIdPrefix = params.id.replace('QG-', '').toLowerCase();
+  // WITH THIS:
+const farmerIdPrefix = params.id.replace('QG-', '').toLowerCase();
+const { data: profiles } = await (supabase as any)
+  .from('farmer_profiles')
+  .select('*')
+  .filter('id::text', 'ilike', `${farmerIdPrefix}%`);
 
-  const { data: profiles } = await supabase
-    .from('farmer_profiles')
-    .select('*')
-    .ilike('id', `${farmerIdPrefix}%`);
-
+  
   const p = profiles?.[0] as any;
   if (!p) return notFound();
 

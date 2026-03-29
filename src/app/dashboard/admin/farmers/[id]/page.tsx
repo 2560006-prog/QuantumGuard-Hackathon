@@ -4,7 +4,7 @@ import { formatDate, maskAadhaar, maskAccountNumber } from '@/lib/utils';
 import StatusBadge from '@/components/shared/StatusBadge';
 import DocumentViewer from '@/components/validator/DocumentViewer';
 import AdminAssignValidator from '@/components/admin/AdminAssignValidator';
-import AdminStatusUpdater from '@/components/admin/AdminStatusUpdater';
+import AdminStatusUpdator from '@/components/admin/AdminStatusUpdator';
 import { User, Phone, MapPin, Landmark, Calendar, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 

@@ -21,7 +21,7 @@ const STATUS_OPTIONS: { value: VerificationStatus; label: string; color: string;
   { value: 'rejected', label: 'Rejected', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', icon: <XCircle className="w-3.5 h-3.5" /> },
 ];
 
-export default function AdminStatusUpdater({ farmerId, currentStatus, farmerName }: Props) {
+export default function AdminStatusUpdator({ farmerId, currentStatus, farmerName }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [selected, setSelected] = useState<VerificationStatus>(currentStatus || 'pending');

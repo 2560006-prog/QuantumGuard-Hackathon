@@ -123,7 +123,7 @@ export default async function AdminFarmerDetailPage({ params }: { params: { id: 
         {/* Right: Admin Actions */}
         <div className="col-span-1 space-y-4">
           {/* STATUS UPDATER - Admin can approve/reject directly */}
-          <AdminStatusUpdater
+          <AdminStatusUpdator
             farmerId={params.id}
             currentStatus={v?.status ?? 'pending'}
             currentRemarks={v?.validator_remarks ?? ''}

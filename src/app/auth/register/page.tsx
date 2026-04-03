@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
@@ -86,6 +86,15 @@ function Field({ label, value, onChange, req, ph, type='text', opts, max }: FP) 
   );
 }
 
+const steps = [
+    {n:1,label:'Account', icon:'👤',desc:'Login credentials'},
+    {n:2,label:'Personal',icon:'📋',desc:'Identity & address'},
+    {n:3,label:'Farm',    icon:'🌾',desc:'Land & crop details'},
+    {n:4,label:'Bank',   icon:'🏦',desc:'Payment details'},
+  ];
+
+
+
 export default function RegisterPage() {
   const router = useRouter();
   const sb = createClient();
@@ -100,8 +109,7 @@ export default function RegisterPage() {
   });
 
   useEffect(() => { setMounted(true); }, []);
-  const set = (k: keyof typeof form) => (v: string) => setForm(f => ({...f, [k]: v}));
-
+const set = useCallback((k: keyof typeof form) => (v: string) => setForm(f => ({...f, [k]: v})), []);
   function nextStep() {
     if (step===1) {
       if (!form.name.trim()) { toast.error('Full name is required'); return; }
@@ -215,13 +223,7 @@ export default function RegisterPage() {
     }
   }
 
-  const steps = [
-    {n:1,label:'Account', icon:'👤',desc:'Login credentials'},
-    {n:2,label:'Personal',icon:'📋',desc:'Identity & address'},
-    {n:3,label:'Farm',    icon:'🌾',desc:'Land & crop details'},
-    {n:4,label:'Bank',   icon:'🏦',desc:'Payment details'},
-  ];
-
+  
   if (!mounted) return null;
 
   return (<>

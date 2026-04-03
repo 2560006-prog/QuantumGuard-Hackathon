@@ -84,7 +84,7 @@ export default function FarmerDashboard() {
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#f5faf5'}}>
       <div style={{textAlign:'center'}}>
         <div style={{fontSize:'48px',marginBottom:'16px'}}>🌾</div>
-        <div style={{fontSize:'16px',color:'#2e7d32',fontWeight:'600',fontFamily:'Poppins,sans-serif'}}>Loading FarmVerify...</div>
+        <div style={{fontSize:'16px',color:'#2e7d32',fontWeight:'600',fontFamily:'Poppins,sans-serif'}}>Loading QuantumGuard...</div>
         <div style={{fontSize:'12px',color:'#6b7280',marginTop:'6px'}}>Fetching your farm data</div>
       </div>
     </div>
@@ -479,7 +479,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text1)}
           <div className="f-sidebar">
             <div className="f-logo">
               <div className="f-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" width="17" height="17"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-              <div><div className="f-logo-title">FarmVerify</div><div className="f-logo-sub">Farmer Portal</div></div>
+              <div><div className="f-logo-title">QuantumGuard</div><div className="f-logo-sub">Farmer Portal</div></div>
             </div>
             <nav className="f-nav">
               <div className="f-nav-section">My Dashboard</div>
@@ -660,7 +660,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text1)}
               <div className="f-content">
                 <div style={{display:'grid',gridTemplateColumns:'auto 1fr',gap:'20px',alignItems:'start'}}>
                   <div className="qr-card-wrap" style={{maxWidth:'280px'}}>
-                    <div className="qr-header"><div className="qr-header-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div className="qr-header-name">FarmVerify</div></div>
+                    <div className="qr-header"><div className="qr-header-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" width="14" height="14"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div className="qr-header-name">QuantumGuard</div></div>
                     <div style={{fontWeight:'700',fontSize:'16px',color:'#1a1a1a'}}>{userName}</div>
                     <div style={{fontSize:'11px',color:'#6b7280',fontFamily:'monospace'}}>{farmerId || 'Not registered'}</div>
                     <div id="qr-canvas" style={{width:'180px',height:'180px',margin:'8px 0'}}></div>

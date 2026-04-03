@@ -70,7 +70,7 @@ export default function Sidebar({ role, userName, userEmail }: SidebarProps) {
             <Leaf className="w-5 h-5" style={{ color: '#22c55e' }} />
           </div>
           <div>
-            <p className="text-sm font-bold leading-none" style={{ color: 'var(--text-primary)' }}>FarmVerify</p>
+            <p className="text-sm font-bold leading-none" style={{ color: 'var(--text-primary)' }}>QuantumGuard</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{roleLabels[role]}</p>
           </div>
         </div>

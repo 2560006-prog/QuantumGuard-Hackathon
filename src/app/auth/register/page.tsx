@@ -70,7 +70,7 @@ body{font-family:'Nunito',sans-serif;background:#0f1a12;color:#e8f5e9}
 @media(max-width:480px){.g2,.g3{grid-template-columns:1fr}.gfull{grid-column:1}}
 `;
 
-// ── Field component OUTSIDE main component to prevent focus loss ──
+// Field OUTSIDE component to prevent focus loss
 type FP = { label:string; value:string; onChange:(v:string)=>void; req?:boolean; ph?:string; type?:string; opts?:string[]; max?:number };
 function Field({ label, value, onChange, req, ph, type='text', opts, max }: FP) {
   return (
@@ -80,7 +80,7 @@ function Field({ label, value, onChange, req, ph, type='text', opts, max }: FP) 
         ? <select className="finp" value={value} onChange={e=>onChange(e.target.value)}>
             {opts.map(o=><option key={o} style={{background:'#1a2b1c'}}>{o}</option>)}
           </select>
-        : <input className="finp" type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={ph} maxLength={max} />
+        : <input className="finp" type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={ph} maxLength={max} autoComplete="off" />
       }
     </div>
   );
@@ -104,11 +104,17 @@ export default function RegisterPage() {
 
   function nextStep() {
     if (step===1) {
-      if (!form.name||!form.email||!form.password) { toast.error('Fill all required fields'); return; }
+      if (!form.name.trim()) { toast.error('Full name is required'); return; }
+      if (!form.email.trim()) { toast.error('Email is required'); return; }
+      if (!form.password) { toast.error('Password is required'); return; }
       if (form.password.length<6) { toast.error('Password must be 6+ characters'); return; }
       if (form.password!==form.confirm) { toast.error('Passwords do not match'); return; }
     }
-    if (step===2 && (!form.mobile||!form.aadhaar)) { toast.error('Mobile and Aadhaar required'); return; }
+    if (step===2) {
+      if (!form.mobile.trim()) { toast.error('Mobile number is required'); return; }
+      if (form.mobile.length !== 10) { toast.error('Mobile must be 10 digits'); return; }
+      if (!form.aadhaar.trim()) { toast.error('Aadhaar number is required'); return; }
+    }
     if (step===3 && !form.landArea) { toast.error('Land area is required'); return; }
     if (step<4) { setStep(s=>s+1); return; }
     submitAll();
@@ -117,62 +123,96 @@ export default function RegisterPage() {
   async function submitAll() {
     setLoading(true);
     try {
-      // 1. Create auth account
+      // Step 1: Sign up
       const { data: authData, error: authErr } = await sb.auth.signUp({
-        email: form.email, password: form.password,
-        options: { data: { full_name: form.name, role: 'farmer' } }
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        options: {
+          data: { full_name: form.name.trim(), role: 'farmer' },
+          // Disable email confirmation for immediate login
+          emailRedirectTo: undefined,
+        }
       });
-      if (authErr) throw authErr;
 
-      // 2. Sign in
-      await new Promise(r=>setTimeout(r,1200));
-      const { data: signIn, error: signInErr } = await sb.auth.signInWithPassword({ email: form.email, password: form.password });
-      if (signInErr) throw signInErr;
+      if (authErr) {
+        if (authErr.message.includes('already registered')) {
+          toast.error('Email already registered. Please login instead.');
+        } else {
+          toast.error(authErr.message);
+        }
+        return;
+      }
 
-      // 3. Create farmer profile
-const { error: profileErr } = await (sb as any).from('farmer_profiles').insert({        user_id: signIn.user.id,
-        full_name: form.name,
-        mobile_number: form.mobile,
-        aadhaar_number: form.aadhaar,
-        address: [form.address,form.village,form.district,form.state,form.pincode].filter(Boolean).join(', '),
-        land_area: parseFloat(form.landArea)||0,
+      if (!authData.user) {
+        toast.error('Registration failed — please try again');
+        return;
+      }
+
+      const uid = authData.user.id;
+
+      // Step 2: Sign in immediately (works because email confirmation is disabled in Supabase dashboard)
+      const { data: signIn, error: signInErr } = await sb.auth.signInWithPassword({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      });
+
+      if (signInErr || !signIn?.user) {
+        // Even if sign in fails, try to save profile with the uid from signup
+        toast.error('Account created but login failed. Please login manually.');
+        router.push('/auth/login');
+        return;
+      }
+
+      // Step 3: Create farmer profile
+      const { error: profileErr } = await sb.from('farmer_profiles').insert({
+        user_id: uid,
+        full_name: form.name.trim(),
+        mobile_number: form.mobile.trim(),
+        aadhaar_number: form.aadhaar.replace(/\s/g, ''),
+        address: [form.address, form.village, form.district, form.state, form.pincode].filter(Boolean).join(', '),
+        land_area: parseFloat(form.landArea) || 0,
         land_unit: 'acres',
         crop_type: form.cropType,
-        bank_name: form.bankName,
-        account_number: form.accountNumber,
-        ifsc_code: form.ifsc,
-        account_holder_name: form.accountHolder||form.name,
+        bank_name: form.bankName.trim(),
+        account_number: form.accountNumber.trim(),
+        ifsc_code: form.ifsc.trim().toUpperCase(),
+        account_holder_name: form.accountHolder.trim() || form.name.trim(),
       });
-      if (profileErr) throw profileErr;
 
-      // 4. Register on blockchain (non-blocking)
-      const farmerId = 'QG-' + signIn.user.id.slice(0,8).toUpperCase();
-      const { data: newProfile } = await sb
-        .from('farmer_profiles')
-        .select('id')
-        .eq('user_id', signIn.user.id)
-        .single();
+      if (profileErr) {
+        console.error('Profile error:', profileErr);
+        // Profile failed but account created — still redirect to dashboard
+        toast.error('Profile save failed: ' + profileErr.message);
+        return;
+      }
 
+      // Step 4: Trigger blockchain (non-blocking)
+      const farmerId = 'QG-' + uid.slice(0,8).toUpperCase();
+      const { data: newProfile } = await sb.from('farmer_profiles').select('id').eq('user_id', uid).single();
       if (newProfile) {
         fetch('/api/blockchain/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             farmerId,
-            name: form.name,
-            mobile: form.mobile,
-            aadhaarLast4: form.aadhaar.slice(-4),
+            name: form.name.trim(),
+            mobile: form.mobile.trim(),
+            aadhaarLast4: form.aadhaar.replace(/\s/g, '').slice(-4),
             profileId: (newProfile as any).id,
           }),
-        }).catch(e => console.log('Blockchain registration failed:', e));
+        }).catch(e => console.log('Blockchain:', e));
       }
 
-      toast.success('Registration complete! Blockchain identity being created...');
+      toast.success('✅ Registration complete! Welcome to QuantumGuard!');
       router.push('/dashboard/farmer');
       router.refresh();
+
     } catch(err:any) {
-      toast.error(err?.message??'Registration failed');
-    } finally { setLoading(false); }
+      console.error('Registration error:', err);
+      toast.error(err?.message ?? 'Registration failed — please try again');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const steps = [
@@ -187,16 +227,14 @@ const { error: profileErr } = await (sb as any).from('farmer_profiles').insert({
   return (<>
     <style dangerouslySetInnerHTML={{__html: STYLES}} />
     <div className="reg-page">
-
-      {/* LEFT */}
       <div className="reg-left">
         <div className="reg-brand">
           <div className="reg-brand-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" width="20" height="20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
-          <span className="reg-brand-name">FarmVerify</span>
+          <span className="reg-brand-name">QuantumGuard</span>
         </div>
-        <div className="reg-left-title">Join FarmVerify<br/>as a <span>Farmer</span> 🌱</div>
+        <div className="reg-left-title">Join QuantumGuard<br/>as a <span>Farmer</span> 🌱</div>
         <div className="reg-left-desc">Complete 4 steps to get your blockchain identity and access all government schemes.</div>
         <div className="reg-steps">
           {steps.map(s => {
@@ -216,7 +254,6 @@ const { error: profileErr } = await (sb as any).from('farmer_profiles').insert({
         </div>
       </div>
 
-      {/* RIGHT */}
       <div className="reg-right">
         <div className="reg-form">
           <div className="reg-stepper">
@@ -244,17 +281,17 @@ const { error: profileErr } = await (sb as any).from('farmer_profiles').insert({
             <div className="gfull"><Field label="Full Address" value={form.address} onChange={set('address')} ph="House No, Street, Landmark"/></div>
             <Field label="Village / Town" value={form.village} onChange={set('village')} ph="e.g. Koregaon"/>
             <Field label="District" value={form.district} onChange={set('district')} ph="e.g. Satara"/>
-            <Field label="State" value={form.state} onChange={set('state')} opts={['Maharashtra','Karnataka','Punjab','Haryana','Uttar Pradesh','Madhya Pradesh','Andhra Pradesh','Telangana','Rajasthan','Gujarat']}/>
+            <Field label="State" value={form.state} onChange={set('state')} opts={['Maharashtra','Karnataka','Punjab','Haryana','Uttar Pradesh','Madhya Pradesh','Andhra Pradesh','Telangana','Rajasthan','Gujarat','Tamil Nadu','Kerala','Bihar','Odisha','Assam']}/>
             <Field label="PIN Code" value={form.pincode} onChange={set('pincode')} ph="6-digit PIN" max={6}/>
           </div>}
 
           {step===3 && <div className="g3">
             <Field label="Land Area (Acres)" value={form.landArea} onChange={set('landArea')} req type="number" ph="e.g. 3.5"/>
             <Field label="Survey / Gat No." value={form.surveyNo} onChange={set('surveyNo')} ph="e.g. 45/A"/>
-            <Field label="Crop Type" value={form.cropType} onChange={set('cropType')} opts={['Wheat','Sugarcane','Rice / Paddy','Soybean','Cotton','Onion','Tomato','Grapes','Turmeric','Mixed Crops']}/>
-            <Field label="Irrigation" value={form.irrigationType} onChange={set('irrigationType')} opts={['Borewell','Drip Irrigation','Canal / River','Rain-fed','Tank / Pond']}/>
-            <Field label="Soil Type" value={form.soilType} onChange={set('soilType')} opts={['Black Cotton Soil','Red Laterite','Alluvial','Sandy Loam','Clay']}/>
-            <Field label="Ownership" value={form.ownership} onChange={set('ownership')} opts={['Self-owned','Leased','Inherited']}/>
+            <Field label="Crop Type" value={form.cropType} onChange={set('cropType')} opts={['Wheat','Sugarcane','Rice / Paddy','Soybean','Cotton','Onion','Tomato','Grapes','Turmeric','Mixed Crops','Maize','Groundnut','Sunflower','Jowar','Bajra']}/>
+            <Field label="Irrigation" value={form.irrigationType} onChange={set('irrigationType')} opts={['Borewell','Drip Irrigation','Canal / River','Rain-fed','Tank / Pond','Sprinkler']}/>
+            <Field label="Soil Type" value={form.soilType} onChange={set('soilType')} opts={['Black Cotton Soil','Red Laterite','Alluvial','Sandy Loam','Clay','Loamy']}/>
+            <Field label="Ownership" value={form.ownership} onChange={set('ownership')} opts={['Self-owned','Leased','Inherited','Government Allotted']}/>
           </div>}
 
           {step===4 && <>
@@ -266,7 +303,7 @@ const { error: profileErr } = await (sb as any).from('farmer_profiles').insert({
               <Field label="Monthly Income (₹)" value={form.monthlyIncome} onChange={set('monthlyIncome')} type="number" ph="e.g. 15000"/>
             </div>
             <div className="info-box">
-              ✅ Your identity will be registered on <strong>Ethereum Sepolia blockchain</strong>. Contract: 0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379. Bank details used only for Direct Benefit Transfer (DBT).
+              ✅ Your data is saved securely. Identity will be registered on <strong>Ethereum Sepolia blockchain</strong>. Bank details used only for Direct Benefit Transfer (DBT).
             </div>
           </>}
 

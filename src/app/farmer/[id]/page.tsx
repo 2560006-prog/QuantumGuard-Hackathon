@@ -84,7 +84,7 @@ export default async function PublicFarmerPage({ params }: { params: { id: strin
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             </div>
-            FarmVerify — Verified Farmer Identity
+            QuantumGuard — Verified Farmer Identity
           </div>
           <div className="farmer-row">
             <div className="avatar">
@@ -179,8 +179,8 @@ export default async function PublicFarmerPage({ params }: { params: { id: strin
         </div>
 
         <div className="footer">
-          <strong>FarmVerify</strong> — Blockchain-Powered Farmer Identity System<br/>
-          Verified by an authorized FarmVerify validator.
+          <strong>QuantumGuard</strong> — Blockchain-Powered Farmer Identity System<br/>
+          Verified by an authorized QuantumGuard validator.
         </div>
       </div>
     </>

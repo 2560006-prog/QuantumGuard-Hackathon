@@ -2,15 +2,21 @@
 
 > Blockchain-powered digital identity platform for Indian farmers built on Ethereum Sepolia Testnet
 
----
-
+--
 ## Problem Statement
+
 Millions of farmers and rural citizens lack secure, verifiable digital identity, preventing access to financial services, government welfare schemes, credit history, and proof of land ownership due to centralized and paperwork-heavy systems.
+
 ---
 
 ## Solution
 
-QuantumGuard creates a blockchain-anchored digital identity for each farmer by combining Ethereum smart contracts for immutable identity registration, Supabase for real-time database and document storage, QR-based verification for instant bank verification, and a multi-role system for farmer, validator, and admin portals.
+QuantumGuard is a decentralized digital identity system built on blockchain that enables farmers to create tamper-proof digital identities without traditional paperwork.
+
+Key solution points:
+Blockchain-based Decentralized Identity (DID)
+Community-based identity verification
+Paperless access to banking, insurance, and government schemes
 
 ---
 
@@ -68,8 +74,6 @@ npm run dev
 ---
 
 ## Environment Variables
-
----
 
 ## Team
 

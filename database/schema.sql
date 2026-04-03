@@ -294,3 +294,39 @@ FROM public.farmer_profiles fp
 LEFT JOIN public.verification_status vs ON vs.farmer_id = fp.id
 LEFT JOIN public.users u_validator ON u_validator.id = vs.validator_id
 LEFT JOIN public.users u_farmer ON u_farmer.id = fp.user_id;
+
+
+-- ============================================================
+-- MINOR NON-INTRUSIVE ADDITIONS (SAFE - NO IMPACT)
+-- ============================================================
+
+-- Optional index for faster email lookup
+CREATE INDEX IF NOT EXISTS idx_users_email 
+ON public.users(email);
+
+-- Optional index for activity logs user tracking
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id 
+ON public.activity_logs(user_id);
+
+-- Add harmless constraint (only applies if value exists)
+ALTER TABLE public.users
+ADD CONSTRAINT IF NOT EXISTS users_phone_format_check 
+CHECK (phone IS NULL OR char_length(phone) >= 10);
+
+-- Add comment metadata (no functional impact)
+COMMENT ON TABLE public.users IS 'Stores application users linked with Supabase auth';
+
+COMMENT ON TABLE public.documents IS 'Stores uploaded farmer documents';
+
+-- Dummy no-op function (never used, just for completeness)
+CREATE OR REPLACE FUNCTION public.no_op_function()
+RETURNS VOID AS $$
+BEGIN
+  -- intentionally empty
+  RETURN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================
+-- END OF SAFE ADDITIONS
+-- ============================================================

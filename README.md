@@ -5,9 +5,7 @@
 ---
 
 ## Problem Statement
-
-Over 140 million Indian farmers lack verifiable digital identities, making it difficult to access government schemes, loans, and banking services. Paper documents are easily forged, lost, or tampered with.
-
+Millions of farmers and rural citizens lack secure, verifiable digital identity, preventing access to financial services, government welfare schemes, credit history, and proof of land ownership due to centralized and paperwork-heavy systems.
 ---
 
 ## Solution

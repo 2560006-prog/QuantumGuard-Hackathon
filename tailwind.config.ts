@@ -1,3 +1,4 @@
+// Tailwind CSS configuration - QuantumGuard
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [

@@ -1,3 +1,6 @@
+// Supabase browser client - QuantumGuard
+// Used for all client-side database operations
+
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types';
 

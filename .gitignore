@@ -46,3 +46,8 @@ Thumbs.db
 /blockchain/cache
 .vercel
 .env*.local
+
+# QuantumGuard
+*.log
+.DS_Store
+Thumbs.db

@@ -70,3 +70,12 @@ npm run dev
 ---
 
 ## Environment Variables
+
+---
+
+## Team
+
+- Shruti Dabade - Operational Lead
+- Anuja Sathe - Technical Lead
+- Megha Desai - Performance Lead
+- Sankashti Chougale - Research and Documentation Lead

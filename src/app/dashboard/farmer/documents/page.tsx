@@ -111,7 +111,18 @@ export default function DocumentsPage() {
   // ── Upload: deletes old file for same type first if replacing ──
   async function uploadDoc(file: File, type: string) {
     if (!profile) { toast.error('Complete your profile first'); return; }
-    setUploadingKey(type);
+
+    // ── File validation ──
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED  = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (file.size > MAX_SIZE) {
+      toast.error('❌ File too large! Maximum allowed size is 5MB');
+      return;
+    }
+    if (!ALLOWED.includes(file.type)) {
+      toast.error('❌ Invalid file type! Only JPG, PNG and PDF allowed');
+      return;
+    }  setUploadingKey(type);
     try {
       // If replacing, delete the old file first
       const existing = docs.find((d: any) => d.document_type === type);

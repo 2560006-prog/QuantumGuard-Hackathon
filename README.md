@@ -1,8 +1,9 @@
 # 🌾 QuantumGuard — Blockchain Farmer Identity System
 
-> Blockchain-powered digital identity platform for Indian farmers on Ethereum Sepolia Testnet
+> Blockchain-powered digital identity platform for Indian farmers built on Ethereum Sepolia Testnet
 
-🌐 **Live Demo:** https://quantum-guard-hackathon-9smz.vercel.app
+🌐 **Live Demo:** https://quantum-guard-hackathon.vercel.app  
+⛓️ **Contract:** https://sepolia.etherscan.io/address/0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379
 
 ---
 
@@ -17,6 +18,7 @@ Over 140 million Indian farmers lack verifiable digital identities, making it di
 QuantumGuard creates a blockchain-anchored digital identity for each farmer combining:
 - Ethereum smart contracts for immutable identity registration
 - Supabase for real-time database and document storage
+- IPFS via Pinata for decentralized file storage
 - QR-based verification for instant bank verification
 - Multi-role system for farmer, validator, and admin portals
 
@@ -24,15 +26,38 @@ QuantumGuard creates a blockchain-anchored digital identity for each farmer comb
 
 ## 🛠️ Tech Stack
 
+### Frontend
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 14 (App Router) + React 18 |
+| Framework | Next.js 14 (App Router) + React 18 |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
-| Backend | Supabase (Auth, DB, Storage) |
-| Database | PostgreSQL (via Supabase) |
-| Blockchain | Solidity + Hardhat + Ethereum Sepolia |
-| Integration | ethers.js + Infura RPC |
+| Auth | Supabase Auth (email/password) |
+
+### Backend
+| Layer | Technology |
+|-------|-----------|
+| Server | Node.js + Express.js |
+| Database | PostgreSQL (Supabase) + MongoDB (Atlas) |
+| ORM | Mongoose |
+| File Upload | Multer + IPFS via Pinata |
+| API Client | Axios |
+
+### Blockchain
+| Layer | Technology |
+|-------|-----------|
+| Platform | Ethereum Sepolia Testnet |
+| Language | Solidity 0.8.20 |
+| Framework | Hardhat |
+| Library | Ethers.js |
+| Node | Alchemy RPC / Infura |
+
+### Security
+| Layer | Technology |
+|-------|-----------|
+| Auth Tokens | JWT (JSON Web Tokens) |
+| Passwords | bcrypt hashing |
+| Sensitive Data | crypto-js AES encryption |
 | Identity | Aadhaar OTP Verification |
 
 ---
@@ -42,72 +67,119 @@ QuantumGuard creates a blockchain-anchored digital identity for each farmer comb
 - **Contract:** FarmerIdentity.sol
 - **Network:** Ethereum Sepolia Testnet
 - **Address:** `0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379`
-- **Etherscan:** https://sepolia.etherscan.io/address/0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379
+- **Features:** Register farmer, verify identity, IPFS document hash, validator support
+- **Verify:** https://sepolia.etherscan.io/address/0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379
 
 ---
 
 ## 📁 Project Structure
-src/
-├── app/
-│   ├── auth/
-│   │   ├── login/          # Login page
-│   │   └── register/       # Farmer registration
-│   ├── dashboard/
-│   │   ├── farmer/         # Farmer portal
-│   │   │   ├── page.tsx
-│   │   │   ├── documents/  # Document upload + Aadhaar OTP
-│   │   │   ├── profile/    # Profile form
-│   │   │   └── status/     # Verification status
-│   │   ├── validator/      # Validator portal
-│   │   └── admin/          # Admin portal
-│   ├── api/
-│   │   ├── aadhaar/        # OTP send + verify
-│   │   └── blockchain/     # Ethereum registration
-│   └── farmer/[id]/        # Public QR scan page
-├── components/
-│   ├── shared/
-│   ├── validator/
-│   └── admin/
-├── lib/
-│   ├── supabase/
-│   ├── blockchain.ts
-│   └── FarmerIdentityABI.json
-└── types/
-blockchain/
-├── contracts/FarmerIdentity.sol
-├── scripts/deploy.js
-└── hardhat.config.js
-database/
-└── schema.sql
+QuantumGuard-Hackathon/
+├── src/
+│   ├── app/
+│   │   ├── auth/
+│   │   │   ├── login/              # Login page
+│   │   │   └── register/           # 4-step farmer registration
+│   │   ├── dashboard/
+│   │   │   ├── farmer/             # Farmer portal
+│   │   │   │   ├── page.tsx        # Dashboard home
+│   │   │   │   ├── profile/        # Profile form (create/edit)
+│   │   │   │   ├── documents/      # Document upload + Aadhaar OTP
+│   │   │   │   └── status/         # Verification status
+│   │   │   ├── validator/          # Validator portal
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── farmers/[id]/   # Farmer detail + review
+│   │   │   └── admin/              # Admin portal
+│   │   │       ├── page.tsx
+│   │   │       ├── farmers/        # All farmers + management
+│   │   │       ├── validators/     # Validator management
+│   │   │       ├── analytics/      # Stats & charts
+│   │   │       └── settings/       # Admin settings
+│   │   ├── api/
+│   │   │   ├── aadhaar/
+│   │   │   │   ├── send-otp/       # Generate OTP
+│   │   │   │   └── verify-otp/     # Verify OTP
+│   │   │   ├── blockchain/
+│   │   │   │   ├── register/       # Register on Ethereum
+│   │   │   │   └── register-existing/ # Batch registration
+│   │   │   └── contact/            # Contact form API
+│   │   └── farmer/[id]/            # Public QR scan page
+│   ├── components/
+│   │   ├── shared/                 # Sidebar, StatusBadge, StatCard
+│   │   ├── validator/              # ValidatorReviewForm, DocumentViewer
+│   │   └── admin/                  # AdminFarmerActions, AdminValidatorManager
+│   ├── contracts/
+│   │   └── FarmerIdentity.sol      # Solidity smart contract
+│   ├── lib/
+│   │   ├── supabase/               # client.ts, server.ts, middleware.ts
+│   │   ├── blockchain.ts           # ethers.js contract interaction
+│   │   └── FarmerIdentityABI.json  # Contract ABI
+│   └── types/
+│       └── index.ts                # TypeScript definitions
+├── blockchain/
+│   ├── contracts/FarmerIdentity.sol
+│   ├── scripts/deploy.js
+│   └── hardhat.config.js
+└── database/
+└── schema.sql                  # Full PostgreSQL schema
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Setup & Installation
 
-**1. Clone the repo**
+### Option A — Next.js Frontend (Supabase)
 ```bash
+# Clone the repo
 git clone https://github.com/2560006-prog/QuantumGuard-Hackathon.git
 cd QuantumGuard-Hackathon
-```
 
-**2. Install dependencies**
-```bash
+# Install dependencies
 npm install
-```
 
-**3. Configure environment**
-```bash
+# Setup environment
 cp .env.example .env.local
-# Fill in your Supabase and blockchain credentials
 ```
 
-**4. Run database schema**
-- Go to Supabase dashboard → SQL Editor
-- Paste and run `database/schema.sql`
-
-**5. Start development server**
+Fill in `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379
+CONTRACT_ADDRESS=0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/your-key
+DEPLOYER_PRIVATE_KEY=your-wallet-private-key
+```
 ```bash
-npm run dev
+npm run dev   # Runs on http://localhost:3000
+```
+
+### Option B — Node.js Backend (MongoDB)
+```bash
+# Install backend dependencies
+npm install
+
+# Setup environment
+cp .env.example .env
+```
+
+Fill in `.env`:
+```env
+MONGO_URI=mongodb+srv://...
+PINATA_API_KEY=your-pinata-key
+PINATA_SECRET_KEY=your-pinata-secret
+ALCHEMY_RPC=https://eth-sepolia.g.alchemy.com/v2/your-key
+PRIVATE_KEY=your-metamask-private-key
+CONTRACT_ADDRESS=0xAf9a6Eefccd63B77D860BD1d544Fa8F661DF1379
+```
+```bash
+node server.js   # Runs on http://localhost:5000
+```
+
+### Deploy Smart Contract
+```bash
+cd blockchain
+npm install
+npx hardhat compile
+npx hardhat run scripts/deploy.js --network sepolia
 ```
 
 ---
@@ -120,10 +192,12 @@ npm run dev
 | Upload documents | ✅ | ❌ | ❌ |
 | Aadhaar OTP verify | ✅ | ❌ | ❌ |
 | View own status | ✅ | ❌ | ❌ |
-| Review farmers | ❌ | ✅ | ✅ |
-| Approve/Reject | ❌ | ✅ | ✅ |
+| View all farmers | ❌ | ✅ | ✅ |
+| Approve / Reject | ❌ | ✅ | ✅ |
 | Assign validators | ❌ | ❌ | ✅ |
+| Delete records | ❌ | ❌ | ✅ |
 | Analytics | ❌ | ❌ | ✅ |
+| Manage validators | ❌ | ❌ | ✅ |
 
 ---
 
@@ -131,27 +205,60 @@ npm run dev
 auth.users (Supabase)
 │
 ▼
-public.users           ← role, profile info
+public.users              ← role, profile info
 │
-├── farmer_profiles      ← personal, farm, bank, blockchain data
+├── farmer_profiles   ← personal, farm, bank, blockchain data
 │       │
-│       ├── documents           ← file uploads
-│       └── verification_status ← pending/approved/rejected
+│       ├── documents              ← file uploads (Supabase + IPFS)
+│       ├── verification_status    ← pending/approved/rejected
+│       └── aadhaar_verifications  ← OTP records
 │
-└── aadhaar_verifications  ← OTP records
+├── contact_messages   ← contact form submissions
+├── notifications      ← farmer alerts
+└── activity_logs      ← audit trail
+
+---
+
+## 🌐 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new farmer |
+| POST | `/api/auth/login` | Login with credentials |
+| GET | `/api/farmer/profile` | Get farmer profile |
+| PUT | `/api/farmer/profile` | Update profile |
+| GET | `/api/farmer/loan-eligibility` | Check loan eligibility score |
+| POST | `/api/aadhaar/send-otp` | Generate Aadhaar OTP |
+| POST | `/api/aadhaar/verify-otp` | Verify Aadhaar OTP |
+| POST | `/api/documents/upload` | Upload doc to IPFS + Supabase |
+| DELETE | `/api/documents/:id` | Remove document |
+| POST | `/api/blockchain/register` | Register identity on Ethereum |
+| GET | `/api/blockchain/verify/:hash` | Verify hash on chain |
+| POST | `/api/contact` | Submit contact form |
+
+---
+
+## 📦 Storage
+
+| Storage | Type | Contents |
+|---------|------|----------|
+| Supabase Storage | Cloud | Profile photos, documents |
+| IPFS via Pinata | Decentralized | Permanent document storage |
 
 ---
 
 ## 🎯 Key Features
 
 - ⛓️ Blockchain identity on Ethereum Sepolia
-- 🪪 Aadhaar OTP verification
-- 📄 Document upload with validation
-- 📱 QR identity card for banks
-- ✅ Validator review system
-- 🛡️ Admin management portal
-- 🏛️ 8+ government schemes
+- 🪪 Aadhaar OTP verification before document upload
+- 📁 One-file-per-slot document management with 5MB validation
+- 📱 QR identity card for instant bank verification
+- ✅ Validator review and approval system
+- 🛡️ Admin management portal with analytics
+- 🏛️ 8+ government scheme listings
 - 💰 Loan eligibility calculator
+- 🔐 AES-256 encryption for sensitive data
+- 🌐 IPFS decentralized file storage
 
 ---
 
@@ -170,6 +277,8 @@ public.users           ← role, profile info
 npm run dev      # Development server
 npm run build    # Production build
 npm run start    # Production server
+npm run lint     # ESLint check
+node server.js   # Node.js backend server
 ```
 
 ---
@@ -180,6 +289,3 @@ npm run start    # Production server
 - Anuja Sathe — Technical Lead
 - Megha Desai — Performance Lead
 - Sankashti Chougale — Research and Documentation Lead
-bashgit add README.md
-git commit -m "Add complete README with structure, setup guide, role table and live demo link"
-git push

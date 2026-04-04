@@ -1,36 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 
-/* ---------- FIELD COMPONENT (optimized) ---------- */
-type FP = {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  req?: boolean;
-  type?: string;
-};
-
-function Field({ label, value, onChange, req, type = 'text' }: FP) {
-  return (
-    <div style={{ marginBottom: '12px' }}>
-      <label style={{ fontSize: '12px' }}>
-        {label} {req && '*'}
-      </label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        type={type}
-        style={styles.input}
-      />
-    </div>
-  );
-}
-
-/* ---------- MAIN COMPONENT ---------- */
 export default function RegisterPage() {
   const router = useRouter();
   const sb = createClient();
@@ -38,38 +12,42 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirm: '',
-    mobile: '',
-    aadhaar: '',
-    landArea: '',
-  });
+  /* ----------- REFS (NO STATE) ----------- */
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
 
-  const set = useCallback(
-    (key: keyof typeof form) => (value: string) =>
-      setForm((f) => ({ ...f, [key]: value })),
-    []
-  );
+  const mobileRef = useRef<HTMLInputElement>(null);
+  const aadhaarRef = useRef<HTMLInputElement>(null);
 
-  /* ---------- NEXT STEP ---------- */
+  const landRef = useRef<HTMLInputElement>(null);
+
+  /* ----------- NEXT STEP ----------- */
   function nextStep() {
+    const name = nameRef.current?.value || '';
+    const email = emailRef.current?.value || '';
+    const pass = passRef.current?.value || '';
+    const confirm = confirmRef.current?.value || '';
+
+    const mobile = mobileRef.current?.value || '';
+
     if (step === 1) {
-      if (!form.name || !form.email || !form.password) {
+      if (!name || !email || !pass) {
         toast.error('Fill all fields');
         return;
       }
-      if (form.password !== form.confirm) {
+      if (pass !== confirm) {
         toast.error('Passwords do not match');
         return;
       }
     }
 
-    if (step === 2 && form.mobile.length !== 10) {
-      toast.error('Invalid mobile');
-      return;
+    if (step === 2) {
+      if (mobile.length !== 10) {
+        toast.error('Invalid mobile');
+        return;
+      }
     }
 
     if (step < 3) {
@@ -79,13 +57,17 @@ export default function RegisterPage() {
     }
   }
 
-  /* ---------- SUBMIT ---------- */
+  /* ----------- SUBMIT ----------- */
   async function submit() {
     setLoading(true);
+
     try {
-      const { data, error } = await sb.auth.signUp({
-        email: form.email,
-        password: form.password,
+      const email = emailRef.current?.value || '';
+      const password = passRef.current?.value || '';
+
+      const { error } = await sb.auth.signUp({
+        email,
+        password,
       });
 
       if (error) throw error;
@@ -99,53 +81,34 @@ export default function RegisterPage() {
     }
   }
 
-  /* ---------- UI ---------- */
+  /* ----------- UI ----------- */
   return (
     <div style={styles.page}>
       <div style={styles.box}>
-        <h2>Register (Step {step})</h2>
+        <h2>Register - Step {step}</h2>
 
+        {/* STEP 1 */}
         {step === 1 && (
           <>
-            <Field label="Name" value={form.name} onChange={set('name')} req />
-            <Field label="Email" value={form.email} onChange={set('email')} />
-            <Field
-              label="Password"
-              value={form.password}
-              onChange={set('password')}
-              type="password"
-            />
-            <Field
-              label="Confirm"
-              value={form.confirm}
-              onChange={set('confirm')}
-              type="password"
-            />
+            <input ref={nameRef} placeholder="Full Name" style={styles.input} />
+            <input ref={emailRef} placeholder="Email" style={styles.input} />
+            <input ref={passRef} type="password" placeholder="Password" style={styles.input} />
+            <input ref={confirmRef} type="password" placeholder="Confirm Password" style={styles.input} />
           </>
         )}
 
+        {/* STEP 2 */}
         {step === 2 && (
           <>
-            <Field
-              label="Mobile"
-              value={form.mobile}
-              onChange={set('mobile')}
-            />
-            <Field
-              label="Aadhaar"
-              value={form.aadhaar}
-              onChange={set('aadhaar')}
-            />
+            <input ref={mobileRef} placeholder="Mobile Number" style={styles.input} />
+            <input ref={aadhaarRef} placeholder="Aadhaar" style={styles.input} />
           </>
         )}
 
+        {/* STEP 3 */}
         {step === 3 && (
           <>
-            <Field
-              label="Land Area"
-              value={form.landArea}
-              onChange={set('landArea')}
-            />
+            <input ref={landRef} placeholder="Land Area" style={styles.input} />
           </>
         )}
 
@@ -157,7 +120,7 @@ export default function RegisterPage() {
   );
 }
 
-/* ---------- STYLES ---------- */
+/* ----------- STYLES ----------- */
 const styles: any = {
   page: {
     height: '100vh',
@@ -172,21 +135,21 @@ const styles: any = {
     padding: '25px',
     background: '#1a2b1c',
     borderRadius: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
   },
   input: {
-    width: '100%',
-    height: '38px',
-    marginTop: '5px',
+    height: '40px',
+    padding: '8px',
     borderRadius: '6px',
     border: '1px solid #2d4a30',
-    padding: '5px',
   },
   btn: {
-    width: '100%',
     height: '40px',
-    marginTop: '10px',
     background: '#22c55e',
     border: 'none',
     borderRadius: '6px',
+    cursor: 'pointer',
   },
 };

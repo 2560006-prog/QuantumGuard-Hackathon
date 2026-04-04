@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -1672,14 +1674,15 @@ export default function FarmerDashboard() {
 
   useEffect(() => { loadData(); }, []);
 
-  async function loadData() {
+async function loadData() {
   const { data: { user: u } } = await sb.auth.getUser();
   if (!u) { router.push('/auth/login'); return; }
 
-  // Run user + profile queries IN PARALLEL
   const [{ data: ud }, { data: p }] = await Promise.all([
-    sb.from('users').select('*').eq('id', u.id).single(),
-    sb.from('farmer_profiles').select('*').eq('user_id', u.id).single(),
+    sb.from('users').select('id,full_name,role,email').eq('id', u.id).single(),
+    sb.from('farmer_profiles')
+      .select('id,user_id,full_name,mobile_number,aadhaar_number,address,land_area,land_unit,crop_type,bank_name,account_number,ifsc_code,account_holder_name,blockchain_tx_hash,profile_photo_url,created_at')
+      .eq('user_id', u.id).single(),
   ]);
 
   if ((ud as any)?.role !== 'farmer') {
@@ -1689,16 +1692,29 @@ export default function FarmerDashboard() {
   setUser({ ...u, ...(ud as any) });
   setProfile(p || null);
 
-  // Run verification + docs IN PARALLEL if profile exists
   if (p) {
     const [{ data: v }, { data: d }] = await Promise.all([
-      sb.from('verification_status').select('*').eq('farmer_id', (p as any).id).single(),
-      sb.from('documents').select('*').eq('farmer_id', (p as any).id).order('created_at', { ascending: false }),
+      sb.from('verification_status')
+        .select('id,status,validator_remarks,reviewed_at,created_at')
+        .eq('farmer_id', (p as any).id).single(),
+      sb.from('documents')
+        .select('id,document_name,document_type,file_url,file_path,file_size,created_at')
+        .eq('farmer_id', (p as any).id)
+        .order('created_at', { ascending: false }),
     ]);
     setVs(v || null);
     setDocs(d || []);
   }
   setReady(true);
+
+  useEffect(() => {
+  loadData();
+  // Ping DB every 4 minutes to prevent cold start
+  const keepAlive = setInterval(() => {
+    sb.from('users').select('id').limit(1).then(() => {});
+  }, 4 * 60 * 1000);
+  return () => clearInterval(keepAlive);
+}, []);
 }
 
   async function saveProfile() {

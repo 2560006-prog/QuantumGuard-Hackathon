@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
+// Add these stats cards at the top of farmer dashboard
+const stats = [
+  { label: 'Documents Uploaded', value: docs.length, icon: '📄', color: '#16a34a' },
+  { label: 'Schemes Available', value: 8, icon: '🏛️', color: '#2563eb' },
+  { label: 'Verification Status', value: verificationStatus || 'Pending', icon: '✅', color: '#d97706' },
+  { label: 'Blockchain Status', value: profile?.blockchain_tx_hash ? 'Registered' : 'Pending', icon: '⛓️', color: '#7c3aed' },
+];
+
 export default function FarmerDashboard() {
   const supabase = createClient();
   const router = useRouter();
@@ -107,6 +115,7 @@ export default function FarmerDashboard() {
     { id:'documents', label:'Documents', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
     { id:'blockchain', label:'Blockchain Details', section:'Blockchain', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
     { id:'loan', label:'Loan Eligibility', section:'Loans & Identity', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
+    { id:'credit', label:'Credit Score', section:'Loans & Identity', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
     { id:'qr', label:'QR Identity Card', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3"/></svg> },
     { id:'status', label:'Validation Status', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
   ];
@@ -132,6 +141,7 @@ export default function FarmerDashboard() {
     if (pageId === 'status') { setTimeout(() => { if ((window as any).updateValidationStatusPage) (window as any).updateValidationStatusPage(); }, 100); }
     if (pageId === 'documents') { setTimeout(() => { if ((window as any).renderDocumentsPage) (window as any).renderDocumentsPage(); }, 100); }
     if (pageId === 'profile') { setTimeout(() => { if ((window as any).spreadFarmerData) (window as any).spreadFarmerData(); }, 100); }
+    if (pageId === 'credit') { setTimeout(() => { if ((window as any).loadCreditScore) (window as any).loadCreditScore(); }, 100); }
   }
 
   return (
@@ -712,6 +722,30 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text1)}
           </div>
         </div>
       </div>
+
+                  {/* CREDIT SCORE */}
+            <div id="dash-credit" className="f-page">
+              <div className="f-topbar">
+                <div>
+                  <div className="f-page-title">💳 Farmer Credit Score</div>
+                  <div className="f-page-sub">CIBIL-style score based on your farming profile</div>
+                </div>
+                <div className="f-topbar-right">
+                  <button className="btn btn-outline" style={{padding:'7px 14px',fontSize:'12px'}}
+                    onClick={() => (window as any).loadCreditScore?.()}>
+                    🔄 Recalculate
+                  </button>
+                </div>
+              </div>
+              <div className="f-content">
+                <div id="credit-score-container">
+                  <div style={{textAlign:'center',padding:'40px',color:'#6b7280'}}>
+                    <div style={{fontSize:'48px',marginBottom:'12px'}}>💳</div>
+                    <div style={{fontSize:'14px',fontWeight:'600'}}>Loading your credit score...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
       <div className="f-toast" id="f-toast">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2030,6 +2064,80 @@ document.addEventListener('DOMContentLoaded', () => {
     statusTopbar.appendChild(refreshBtn);
   }
 });
+
+// ── OVERRIDE applyScheme to show dynamic toast ──// ── CREDIT SCORE ──
+window.loadCreditScore = async function() {
+  const container = document.getElementById('credit-score-container');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#6b7280"><div style="font-size:32px;margin-bottom:8px">⏳</div><div style="font-size:13px">Calculating score...</div></div>';
+  try {
+    const res  = await fetch('/api/farmer/credit-score');
+    const data = await res.json();
+    if (!data.success) { container.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center">❌ ' + data.error + '</div>'; return; }
+
+    const color = data.gradeColor;
+    const pct   = Math.round((data.score - 300) / 600 * 100);
+
+    container.innerHTML = \`
+      <div style="background:white;border-radius:20px;padding:28px;margin-bottom:16px;border:1px solid #e5e7eb;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.06)">
+        <div style="font-size:56px;font-weight:900;color:\${color};line-height:1;margin-bottom:6px;font-family:'Poppins',sans-serif">\${data.score}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:14px">out of 900</div>
+        <div style="display:inline-flex;align-items:center;gap:10px;padding:10px 24px;border-radius:99px;background:\${color}15;border:2px solid \${color}40;margin-bottom:16px">
+          <span style="font-size:24px;font-weight:900;color:\${color}">\${data.grade}</span>
+          <span style="font-size:14px;font-weight:700;color:\${color}">\${data.gradeLabel}</span>
+        </div>
+        <div style="height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;margin-bottom:14px">
+          <div style="height:100%;width:\${pct}%;background:\${color};border-radius:99px;transition:width 1s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          \${[{l:'Poor',r:'300-449',c:'#dc2626'},{l:'Below Avg',r:'450-549',c:'#ef4444'},{l:'Average',r:'550-649',c:'#f97316'},{l:'Good',r:'650-749',c:'#eab308'},{l:'Excellent',r:'750-900',c:'#16a34a'}].map(x=>'<div style="padding:3px 8px;border-radius:99px;background:'+x.c+'15;border:1px solid '+x.c+'30;font-size:10px;font-weight:700;color:'+x.c+'">'+x.l+' '+x.r+'</div>').join('')}
+        </div>
+        <div style="padding:10px 18px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;display:inline-block">
+          <span style="font-size:12px;color:#6b7280">Max Loan: </span>
+          <span style="font-size:15px;font-weight:800;color:#16a34a">₹\${data.maxLoanAmount.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+
+      <div style="background:white;border-radius:14px;padding:20px;margin-bottom:14px;border:1px solid #e5e7eb">
+        <div style="font-size:14px;font-weight:800;color:#111;margin-bottom:14px">📊 Score Breakdown</div>
+        \${data.factors.map(f=>\`
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:7px">
+                <span style="font-size:16px">\${f.icon}</span>
+                <div>
+                  <div style="font-size:12px;font-weight:700;color:#111">\${f.label}</div>
+                  <div style="font-size:10px;color:#6b7280">\${f.detail}</div>
+                </div>
+              </div>
+              <div><span style="font-size:13px;font-weight:800;color:\${f.color}">\${f.earned}</span><span style="font-size:11px;color:#9ca3af">/\${f.max}</span></div>
+            </div>
+            <div style="height:6px;background:#e5e7eb;border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:\${Math.round(f.earned/f.max*100)}%;background:\${f.color};border-radius:99px"></div>
+            </div>
+          </div>
+        \`).join('')}
+      </div>
+
+      \${data.tips.length > 0 ? \`
+        <div style="background:linear-gradient(135deg,#fef3c7,#fffbeb);border-radius:14px;padding:16px 20px;border:1px solid #fde68a">
+          <div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:10px">💡 Improve Your Score</div>
+          \${data.tips.map(t=>'<div style="font-size:12px;color:#78350f;margin-bottom:6px;display:flex;gap:6px"><span style="color:#d97706;font-weight:700">+</span>'+t+'</div>').join('')}
+        </div>
+      \` : ''}
+    \`;
+  } catch(e) {
+    container.innerHTML = '<div style="padding:20px;color:#ef4444;text-align:center">Failed to load credit score</div>';
+  }
+};
+
+// Auto-load when page opens
+window.showDashPage = (function(orig) {
+  return function(id, el) {
+    orig && orig(id, el);
+    if (id === 'credit') setTimeout(() => window.loadCreditScore && window.loadCreditScore(), 200);
+  };
+})(window.showDashPage);
 
 ` }} />
     </>

@@ -1673,21 +1673,33 @@ export default function FarmerDashboard() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const { data: { user: u } } = await sb.auth.getUser();
-    if (!u) { router.push('/auth/login'); return; }
-    const { data: ud } = await sb.from('users').select('*').eq('id', u.id).single();
-    if ((ud as any)?.role !== 'farmer') { router.push(`/dashboard/${(ud as any)?.role}`); return; }
-    setUser({ ...u, ...(ud as any) });
-    const { data: p } = await sb.from('farmer_profiles').select('*').eq('user_id', u.id).single();
-    setProfile(p || null);
-    if (p) {
-      const { data: v } = await sb.from('verification_status').select('*').eq('farmer_id', (p as any).id).single();
-      setVs(v || null);
-      const { data: d } = await sb.from('documents').select('*').eq('farmer_id', (p as any).id).order('created_at', { ascending: false });
-      setDocs(d || []);
-    }
-    setReady(true);
+  const { data: { user: u } } = await sb.auth.getUser();
+  if (!u) { router.push('/auth/login'); return; }
+
+  // Run user + profile queries IN PARALLEL
+  const [{ data: ud }, { data: p }] = await Promise.all([
+    sb.from('users').select('*').eq('id', u.id).single(),
+    sb.from('farmer_profiles').select('*').eq('user_id', u.id).single(),
+  ]);
+
+  if ((ud as any)?.role !== 'farmer') {
+    router.push(`/dashboard/${(ud as any)?.role}`);
+    return;
   }
+  setUser({ ...u, ...(ud as any) });
+  setProfile(p || null);
+
+  // Run verification + docs IN PARALLEL if profile exists
+  if (p) {
+    const [{ data: v }, { data: d }] = await Promise.all([
+      sb.from('verification_status').select('*').eq('farmer_id', (p as any).id).single(),
+      sb.from('documents').select('*').eq('farmer_id', (p as any).id).order('created_at', { ascending: false }),
+    ]);
+    setVs(v || null);
+    setDocs(d || []);
+  }
+  setReady(true);
+}
 
   async function saveProfile() {
     if (!user) return;
@@ -1767,14 +1779,14 @@ export default function FarmerDashboard() {
     router.push('/auth/login');
   }
 
-  if (!ready) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5faf5' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🌾</div>
-        <div style={{ fontSize: '16px', color: '#2e7d32', fontWeight: 600, fontFamily: 'Poppins,sans-serif' }}>Loading QuantumGuard...</div>
-      </div>
+if (!ready) return (
+  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#f5faf5' }}>
+    <div style={{ textAlign:'center' }}>
+      <div style={{ fontSize:'48px', marginBottom:'12px' }}>🌾</div>
+      <div style={{ fontSize:'16px', color:'#2e7d32', fontWeight:600 }}>Loading QuantumGuard...</div>
     </div>
-  );
+  </div>
+);
 
   const p = profile as any;
   const v = vs as any;

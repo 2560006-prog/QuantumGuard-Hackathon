@@ -1465,9 +1465,9 @@ window.generateQR = function() {
 const _origShowDashPage = window.showDashPage;
 window.showDashPage = function(id, el) {
   _origShowDashPage && _origShowDashPage(id, el);
-if (id === 'credit') {
-  setTimeout(() => { if ((window as any).loadCreditScore) (window as any).loadCreditScore(); }, 100);
-}
+  if (id === 'qr') {
+    setTimeout(generateQRDynamic, 200);
+  }
   if (id === 'status') {
     updateValidationStatusPage();
   }
@@ -1793,16 +1793,20 @@ export default function FarmerDashboard() {
     { id: 'documents', label: 'Documents', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
     { id: 'blockchain', label: 'Blockchain Details', section: 'Blockchain', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> },
     { id: 'loan', label: 'Loan Eligibility', section: 'Loans & Identity', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
-    { id: 'credit', label: 'Credit Score', section: 'Loans & Identity', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
     { id: 'qr', label: 'QR Identity Card', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3"/></svg> },
     { id: 'status', label: 'Validation Status', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
   ];
 
   function showPage(id: string) {
     setActivePage(id);
-  if (id === 'credit') {
-  setTimeout(() => { if ((window as any).loadCreditScore) (window as any).loadCreditScore(); }, 100);
-}
+    if (id === 'qr') {
+      setTimeout(() => {
+        const el = document.getElementById('qr-canvas-real');
+        if (el && (window as any).QRCode && farmerId) {
+          el.innerHTML = '';
+          try { new (window as any).QRCode(el, { text: `${farmerId}|${user?.full_name}|${verStatus}|LAND:${p?.land_area}ac|CROP:${p?.crop_type}`, width: 180, height: 180, colorDark: '#1b5e20', colorLight: '#ffffff' }); } catch(e) {}
+        }
+      }, 300);
     }
   }
 
@@ -2297,19 +2301,6 @@ export default function FarmerDashboard() {
             </div>
           </div>
         )}
-
-        {activePage === 'credit' && (
-          <div id="credit-score-container">
-            <div style={{textAlign:'center',padding:'40px',color:'#6b7280'}}>
-              <div style={{fontSize:'48px',marginBottom:'12px'}}>💳</div>
-              <div style={{fontSize:'14px',fontWeight:'600'}}>Click below to calculate your credit score</div>
-              <button onClick={()=>(window as any).loadCreditScore?.()} style={{marginTop:'16px',padding:'10px 24px',background:'linear-gradient(135deg,#16a34a,#15803d)',color:'white',border:'none',borderRadius:'9px',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'Nunito,sans-serif'}}>
-                💳 Calculate My Credit Score
-              </button>
-            </div>
-          </div>
-)}
-
 
         {/* ══════════════════════ QR ══════════════════════ */}
         {activePage === 'qr' && (

@@ -130,6 +130,17 @@ const set = useCallback((k: keyof typeof form) => (v: string) => setForm(f => ({
     submitAll();
   }
 
+  // Add this useEffect right after the mounted one:
+useEffect(() => {
+  const id = 'qg-styles';
+  if (!document.getElementById(id)) {
+    const el = document.createElement('style');
+    el.id = id;
+    el.textContent = CSS; // or STYLES for register page
+    document.head.appendChild(el);
+  }
+}, []);
+
   async function submitAll() {
     setLoading(true);
     try {
@@ -229,7 +240,6 @@ const set = useCallback((k: keyof typeof form) => (v: string) => setForm(f => ({
   if (!mounted) return null;
 
   return (<>
-    <style dangerouslySetInnerHTML={{__html: STYLES}} />
     <div className="reg-page">
       <div className="reg-left">
         <div className="reg-brand">

@@ -1,6 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
@@ -97,18 +97,30 @@ const CSS = `
 export default function LoginPage() {
   const router   = useRouter();
   const sb       = createClient();
-  const [email, setEmail]       = useState('');
-  const [pass, setPass]         = useState('');
+  const emailRef = useRef<HTMLInputElement>(null);
+const passRef  = useRef<HTMLInputElement>(null);
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [mounted, setMounted]   = useState(false);
 
   // ── Mount guard — prevents hydration mismatch entirely ──
   useEffect(() => { setMounted(true); }, []);
+  // Add this useEffect right after the mounted one:
+useEffect(() => {
+  const id = 'qg-styles';
+  if (!document.getElementById(id)) {
+    const el = document.createElement('style');
+    el.id = id;
+    el.textContent = CSS; // or STYLES for register page
+    document.head.appendChild(el);
+  }
+}, []);
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  const email = emailRef.current?.value || '';
+  const pass  = passRef.current?.value  || '';
+  setLoading(true);
     try {
       const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
       if (error) throw error;
@@ -131,7 +143,6 @@ export default function LoginPage() {
   return (
     <>
       {/* dangerouslySetInnerHTML avoids server/client quote escaping mismatch */}
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       <div className="page">
 
@@ -185,8 +196,8 @@ export default function LoginPage() {
                   id="login-email"
                   className="inp"
                   type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  ref={emailRef}
+                  defaultValue=""
                   placeholder="your@email.com"
                   required
                   autoComplete="email"
@@ -203,8 +214,8 @@ export default function LoginPage() {
                     id="login-pass"
                     className="inp"
                     type={showPass ? 'text' : 'password'}
-                    value={pass}
-                    onChange={e => setPass(e.target.value)}
+                    ref={passRef}
+                    defaultValue=""
                     placeholder="Enter your password"
                     required
                     autoComplete="current-password"
@@ -228,7 +239,7 @@ export default function LoginPage() {
                   key={c.role}
                   className="quick-card"
                   onClick={() => { setEmail(c.email); setPass(c.pass); }}
-                  style={{ borderColor: email === c.email ? c.color : '#2d4a30' }}
+                  style={{ borderColor: '#2d4a30' }}
                 >
                   <div className="quick-card-icon">{c.icon}</div>
                   <div className="quick-card-role" style={{ color: c.color }}>{c.role}</div>

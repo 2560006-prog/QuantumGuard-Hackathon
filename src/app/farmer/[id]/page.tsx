@@ -1,5 +1,111 @@
+import React from 'react';
 import { notFound } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+
+
+function CreditScoreCard({ farmerId }: { farmerId: string }) {
+  const [score, setScore] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const sb = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+  React.useEffect(() => {
+    if (!farmerId) return;
+    sb.from('farmer_credit_scores')
+      .select('*')
+      .eq('farmer_id', farmerId)
+      .maybeSingle()
+      .then(({ data }) => { setScore(data); setLoading(false); });
+  }, [farmerId]);
+
+  const gradeColor = (grade: string) => {
+    const colors: Record<string, string> = {
+      'A+': '#16a34a', 'A': '#22c55e', 'B+': '#84cc16',
+      'B': '#eab308', 'C': '#f97316', 'D': '#ef4444', 'E': '#dc2626'
+    };
+    return colors[grade] || '#6b7280';
+  };
+
+  if (loading) return (
+    <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280', fontSize: '13px' }}>
+      ⏳ Loading credit score...
+    </div>
+  );
+
+  if (!score) return (
+    <div style={{ padding: '16px', background: '#fff3e0', borderRadius: '10px', border: '1px solid #ffe0b2', fontSize: '13px', color: '#e65100', textAlign: 'center' }}>
+      ⚠️ Credit score not yet calculated. Farmer needs to log in and calculate their score.
+    </div>
+  );
+
+  const color = gradeColor(score.grade);
+  const pct = Math.round((score.total_score - 300) / 600 * 100);
+
+  return (
+    <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb', marginTop: '16px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 800, color: '#111', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        💳 Farmer Credit Score
+        <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280', marginLeft: 'auto' }}>
+          Last calculated: {new Date(score.calculated_at).toLocaleDateString('en-IN')}
+        </span>
+      </div>
+
+      {/* Score display */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px' }}>
+        <div style={{ textAlign: 'center', flexShrink: 0 }}>
+          <div style={{ fontSize: '48px', fontWeight: 900, color, lineHeight: 1 }}>{score.total_score}</div>
+          <div style={{ fontSize: '11px', color: '#6b7280' }}>out of 900</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '20px', fontWeight: 900, color }}>{score.grade}</span>
+            <span style={{ fontSize: '13px', fontWeight: 700, color, padding: '3px 10px', background: color + '15', borderRadius: '99px' }}>
+              {score.grade === 'A+' ? 'Excellent' : score.grade === 'A' ? 'Very Good' : score.grade === 'B+' ? 'Good' : score.grade === 'B' ? 'Fair' : score.grade === 'C' ? 'Average' : score.grade === 'D' ? 'Below Avg' : 'Poor'}
+            </span>
+          </div>
+          <div style={{ height: '8px', background: '#e5e7eb', borderRadius: '99px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '99px' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af', marginTop: '4px' }}>
+            <span>300 (Poor)</span><span>600 (Average)</span><span>900 (Excellent)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        {[
+          { label: '🌾 Land', score: score.land_score, max: 150 },
+          { label: '📄 Documents', score: score.docs_score, max: 120 },
+          { label: '⛓️ Blockchain', score: score.blockchain_score, max: 120 },
+          { label: '✅ Verification', score: score.verification_score, max: 100 },
+          { label: '🏦 Bank', score: score.bank_score, max: 40 },
+          { label: '🪪 Aadhaar', score: score.income_score, max: 70 },
+        ].map(item => (
+          <div key={item.label} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>{item.label}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: item.score > 0 ? '#16a34a' : '#9ca3af' }}>{item.score}</div>
+              <div style={{ fontSize: '10px', color: '#9ca3af' }}>/{item.max}</div>
+            </div>
+            <div style={{ height: '3px', background: '#e5e7eb', borderRadius: '99px', marginTop: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${Math.round(item.score / item.max * 100)}%`, background: item.score > 0 ? '#16a34a' : '#e5e7eb', borderRadius: '99px' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recommendation */}
+      <div style={{ marginTop: '12px', padding: '10px 14px', background: score.total_score >= 650 ? '#f0fdf4' : '#fff3e0', borderRadius: '8px', border: `1px solid ${score.total_score >= 650 ? '#bbf7d0' : '#ffe0b2'}`, fontSize: '12px', color: score.total_score >= 650 ? '#15803d' : '#92400e' }}>
+        {score.total_score >= 750 ? '✅ Highly recommended for approval — excellent financial profile' :
+         score.total_score >= 650 ? '✅ Recommended for approval — good credit profile' :
+         score.total_score >= 550 ? '⚠️ Borderline — verify documents carefully before approving' :
+         '❌ Low score — additional verification recommended before approval'}
+      </div>
+    </div>
+  );
+}
 
 export default async function PublicFarmerPage({ params }: { params: { id: string } }) {
   
@@ -174,9 +280,14 @@ export default async function PublicFarmerPage({ params }: { params: { id: strin
                 </div>
                 <a href={doc.file_url} target="_blank" rel="noreferrer" className="doc-view">View →</a>
               </div>
+              
             ))
           )}
         </div>
+        <CreditScoreCard farmerId={(p as any).id} />
+
+
+        
 
         <div className="footer">
           <strong>QuantumGuard</strong> — Blockchain-Powered Farmer Identity System<br/>

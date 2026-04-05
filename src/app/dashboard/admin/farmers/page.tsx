@@ -4,13 +4,6 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
-// Add these stats cards at the top of farmer dashboard
-const stats = [
-  { label: 'Documents Uploaded', value: docs.length, icon: '📄', color: '#16a34a' },
-  { label: 'Schemes Available', value: 8, icon: '🏛️', color: '#2563eb' },
-  { label: 'Verification Status', value: verificationStatus || 'Pending', icon: '✅', color: '#d97706' },
-  { label: 'Blockchain Status', value: profile?.blockchain_tx_hash ? 'Registered' : 'Pending', icon: '⛓️', color: '#7c3aed' },
-];
 
 export default function FarmerDashboard() {
   const supabase = createClient();
